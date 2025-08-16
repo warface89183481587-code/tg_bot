@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Мини‑магазин</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="./styles.css"/>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Артём_приготовил</h1>
+      <div class="cart-badge" id="cartBadge">0</div>
+    </header>
+
+    <main>
+      <section id="catalog" class="catalog"></section>
+
+      <section class="checkout">
+        <h2>Оформление</h2>
+        <div class="form-grid">
+          <label>Имя <input id="firstName" placeholder="Иван"></label>
+          <label>Фамилия <input id="lastName" placeholder="Иванов"></label>
+          <label>Телефон <input id="phone" placeholder="+7 900 000-00-00"></label>
+        </div>
+
+        <h3>Доставка</h3>
+        <div class="radio">
+          <label><input type="radio" name="delivery" value="pickup" checked> Самовывоз</label>
+          <label><input type="radio" name="delivery" value="courier"> Курьер</label>
+        </div>
+        <label id="addressWrap" style="display:none;">Адрес доставки
+          <input id="address" placeholder="г. Ростов-на-Дону, ул. ...">
+        </label>
+
+        <h3>Оплата</h3>
+        <div class="radio">
+          <label><input type="radio" name="payment" value="transfer" checked> Перевод на карту</label>
+          <label><input type="radio" name="payment" value="cash"> Наличными</label>
+        </div>
+
+        <label>Комментарий к заказу
+          <textarea id="comment" rows="3" placeholder="Например, без лука"></textarea>
+        </label>
+
+        <div class="summary">
+          <div>Товары: <span id="subtotal">0 ₽</span></div>
+          <div>Доставка: <span id="deliveryCost">0 ₽</span></div>
+          <div class="total">Итого: <span id="total">0 ₽</span></div>
+        </div>
+
+        <button id="placeOrder">Оформить заказ</button>
+      </section>
+    </main>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
