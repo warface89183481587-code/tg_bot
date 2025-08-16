@@ -17,6 +17,7 @@
       border-collapse: collapse;
       margin-top: 20px;
       background: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     table, th, td {
       border: 1px solid #ddd;
@@ -64,6 +65,7 @@
   </table>
 
   <script>
+    // Загрузка заказов из localStorage
     function loadOrders() {
       const orders = JSON.parse(localStorage.getItem("orders") || "[]");
       const tbody = document.querySelector("#ordersTable tbody");
@@ -78,13 +80,13 @@
         const row = document.createElement("tr");
         row.innerHTML = `
           <td>${index + 1}</td>
-          <td>${order.name}</td>
-          <td>${order.phone}</td>
-          <td>${order.items.map(i => i.name + " ×" + i.qty).join(", ")}</td>
-          <td>${order.delivery}</td>
-          <td>${order.payment}</td>
-          <td>${order.comment}</td>
-          <td>${order.total} ₽</td>
+          <td>${order.name || "-"}</td>
+          <td>${order.phone || "-"}</td>
+          <td>${order.items ? order.items.map(i => i.name + " ×" + i.qty).join(", ") : "-"}</td>
+          <td>${order.delivery || "-"}</td>
+          <td>${order.payment || "-"}</td>
+          <td>${order.comment || "-"}</td>
+          <td>${order.total || 0} ₽</td>
         `;
         tbody.appendChild(row);
       });
