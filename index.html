@@ -2,125 +2,126 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Магазин</title>
+  <title>Мини-магазин</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
+    body { font-family: Arial, sans-serif; padding: 16px; color: var(--tg-theme-text-color); background: var(--tg-theme-bg-color); }
     .stage { display: none; }
-    .active { display: block; }
-    button { margin: 5px; padding: 10px 15px; }
-    input, textarea { width: 100%; margin: 5px 0; padding: 8px; }
+    .stage.active { display: block; }
+    .btn { padding: 12px 20px; margin: 8px 0; background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border:none; border-radius:8px; cursor:pointer; width:100%; }
+    .small-btn { font-size:14px; padding:6px 10px; }
+    input, select, textarea { width:100%; padding:8px; margin:6px 0; border-radius:6px; border:1px solid #ccc; }
+    ul { list-style: none; padding:0; }
+    li { margin:8px 0; }
   </style>
 </head>
 <body>
-  <h1>🛍 Мини-магазин</h1>
-
-  <!-- 1. Каталог -->
+  <h1>Ваш мини-магазин</h1>
   <div id="catalog" class="stage active">
     <h2>Каталог</h2>
     <div>
-      <p>📦 Товар 1 — 1000 ₽</p>
-      <button onclick="addToCart('Товар 1', 1000)">Купить</button>
+      <p>Пирожок с капустой — 90 ₽ <button class="small-btn" onclick="addToCart('Пирожок с капустой', 90)">Добавить</button></p>
+      <p>Пирожок с луком и яйцом — 90 ₽ <button class="small-btn" onclick="addToCart('Пирожок с луком и яйцом', 90)">Добавить</button></p>
+      <p>Хлеб на закваске — 250 ₽ <button class="small-btn" onclick="addToCart('Хлеб на закваске', 250)">Добавить</button></p>
     </div>
-    <div>
-      <p>📦 Товар 2 — 2000 ₽</p>
-      <button onclick="addToCart('Товар 2', 2000)">Купить</button>
-    </div>
-    <button onclick="nextStage('checkout')">➡ Оформить заказ</button>
+    <button class="btn" onclick="goTo('checkout')">Перейти к оформлению</button>
   </div>
 
-  <!-- 2. Оформление -->
   <div id="checkout" class="stage">
-    <h2>Оформление заказа</h2>
-    <ul id="cartList"></ul>
-    <p><b>Итого:</b> <span id="total"></span> ₽</p>
-    <button onclick="nextStage('delivery')">➡ Доставка и оплата</button>
-    <button onclick="backStage('catalog')">⬅ Назад</button>
+    <h2>Корзина / Оформление</h2>
+    <ul id="cart-list"></ul>
+    <p><b>Итого:</b> <span id="cart-total">0</span> ₽</p>
+    <button class="btn" onclick="goTo('delivery')">Доставка и оплата</button>
+    <button class="btn" onclick="goTo('catalog')">← Назад</button>
   </div>
 
-  <!-- 3. Доставка и оплата -->
   <div id="delivery" class="stage">
     <h2>Доставка и оплата</h2>
-    <input id="address" placeholder="Адрес доставки">
-    <textarea id="comment" placeholder="Комментарий"></textarea>
-    <select id="payment">
-      <option value="card">💳 Карта</option>
-      <option value="cash">💵 Наличные</option>
+    <label>
+      <input type="radio" name="deliv" value="pickup" checked onchange="setDelivery(this.value)"> Самовывоз
+    </label>
+    <label>
+      <input type="radio" name="deliv" value="courier" onchange="setDelivery(this.value)"> Курьер
+    </label>
+    <br/>
+    <select id="payment-method" onchange="setPayment(this.value)">
+      <option value="transfer">Перевод</option>
+      <option value="cash">Наличные</option>
     </select>
-    <button onclick="finishOrder()">✅ Завершить</button>
-    <button onclick="backStage('checkout')">⬅ Назад</button>
+    <textarea id="order-comment" placeholder="Комментарий к заказу..."></textarea>
+    <button class="btn" onclick="sendOrder()">Завершить</button>
+    <button class="btn" onclick="goTo('checkout')">← Назад</button>
   </div>
 
-  <!-- 4. Итог -->
-  <div id="result" class="stage">
+  <div id="finish" class="stage">
     <h2>🎉 Поздравляем с покупкой!</h2>
-    <p>Ваш заказ:</p>
-    <ul id="finalList"></ul>
-    <p><b>Итого:</b> <span id="finalTotal"></span> ₽</p>
-    <p>Спасибо за заказ 🙌</p>
+    <ul id="final-list"></ul>
+    <p><b>Итого:</b> <span id="final-total">0</span> ₽</p>
+    <button class="btn" onclick="resetShop()">Вернуться в каталог</button>
   </div>
 
   <script>
-    let cart = [];
+    const tg = window.Telegram.WebApp;
+    const cart = [];
+    let delivery = 'pickup', payment = 'transfer';
 
     function addToCart(name, price) {
-      cart.push({name, price});
-      alert(name + " добавлен в корзину!");
+      cart.push({ name, price });
+      alert(`${name} добавлен в корзину`);
     }
 
-    function nextStage(stage) {
-      document.querySelectorAll('.stage').forEach(div => div.classList.remove('active'));
-      document.getElementById(stage).classList.add('active');
-
-      if (stage === 'checkout') {
-        let cartList = document.getElementById('cartList');
-        cartList.innerHTML = "";
-        let total = 0;
-        cart.forEach(item => {
-          let li = document.createElement('li');
-          li.textContent = item.name + " — " + item.price + " ₽";
-          cartList.appendChild(li);
-          total += item.price;
-        });
-        document.getElementById('total').textContent = total;
-      }
-    }
-
-    function backStage(stage) {
-      document.querySelectorAll('.stage').forEach(div => div.classList.remove('active'));
-      document.getElementById(stage).classList.add('active');
-    }
-
-    function finishOrder() {
-      const address = document.getElementById('address').value;
-      const comment = document.getElementById('comment').value;
-      const payment = document.getElementById('payment').value;
-
-      let order = {
-        cart,
-        address,
-        comment,
-        payment,
-        total: cart.reduce((sum, i) => sum + i.price, 0),
-        time: new Date().toISOString()
-      };
-
-      // Отправляем заказ в бота
-      Telegram.WebApp.sendData(JSON.stringify(order));
-
-      // Показ итоговой страницы
-      document.querySelectorAll('.stage').forEach(div => div.classList.remove('active'));
-      document.getElementById('result').classList.add('active');
-
-      let finalList = document.getElementById('finalList');
-      finalList.innerHTML = "";
-      cart.forEach(item => {
-        let li = document.createElement('li');
-        li.textContent = item.name + " — " + item.price + " ₽";
-        finalList.appendChild(li);
+    function updateCartUI() {
+      const list = document.getElementById('cart-list');
+      list.innerHTML = '';
+      let total = 0;
+      cart.forEach((item,i) => {
+        total += item.price;
+        const li = document.createElement('li');
+        li.textContent = `${item.name} — ${item.price} ₽`;
+        list.appendChild(li);
       });
-      document.getElementById('finalTotal').textContent = order.total;
+      document.getElementById('cart-total').textContent = total;
     }
+
+    function goTo(stage) {
+      document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+      document.getElementById(stage).classList.add('active');
+      if(stage === 'checkout') updateCartUI();
+      if(stage === 'finish') showFinal();
+    }
+
+    function setDelivery(val) { delivery = val; }
+    function setPayment(val) { payment = val; }
+
+    function sendOrder() {
+      if (!cart.length) { alert('Корзина пуста'); return; }
+      const comment = document.getElementById('order-comment').value;
+      const orderData = { cart, delivery, payment, comment, total: cart.reduce((a,b) => a + b.price, 0) };
+      tg.sendData(JSON.stringify(orderData));
+      goTo('finish');
+    }
+
+    function showFinal() {
+      const list = document.getElementById('final-list');
+      list.innerHTML = '';
+      let total = 0;
+      cart.forEach(item => {
+        total += item.price;
+        const li = document.createElement('li');
+        li.textContent = `${item.name} — ${item.price} ₽`;
+        list.appendChild(li);
+      });
+      document.getElementById('final-total').textContent = total;
+    }
+
+    function resetShop() {
+      cart.length = 0;
+      document.getElementById('order-comment').value = '';
+      delivery = 'pickup'; payment = 'transfer';
+      goTo('catalog');
+    }
+
+    tg.expand();
   </script>
 </body>
 </html>
